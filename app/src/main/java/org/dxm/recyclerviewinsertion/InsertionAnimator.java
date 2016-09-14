@@ -1,12 +1,13 @@
 package org.dxm.recyclerviewinsertion;
 
-import android.graphics.Point;
+import android.graphics.PointF;
 import android.support.annotation.NonNull;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.view.ViewPropertyAnimatorCompat;
 import android.support.v4.view.ViewPropertyAnimatorListener;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.RecyclerView.ViewHolder;
+import android.util.Log;
 import android.view.View;
 
 import java.util.ArrayList;
@@ -25,30 +26,38 @@ public class InsertionAnimator extends DefaultItemAnimator {
     private final ArrayList<ArrayList<AdditionInfo>> additionsList = new ArrayList<>();
     private final ArrayList<ViewHolder> addAnimations = new ArrayList<>();
 
-    private Point nextAdditionAnchor = null;
+    private PointF nextAdditionAnchor = null;
 
 
     private static class AdditionInfo {
         @NonNull private final ViewHolder holder;
-        @NonNull private final Point point;
+        @NonNull private final PointF target;
 
-        private AdditionInfo(@NonNull ViewHolder holder, @NonNull Point point) {
+        private AdditionInfo(@NonNull ViewHolder holder, @NonNull PointF target) {
             this.holder = holder;
-            this.point = point;
+            this.target = target;
         }
     }
 
-    public void setNextAdditionAnchor(Point anchor) {
+    public void setNextAdditionAnchor(PointF anchor) {
         nextAdditionAnchor = anchor;
     }
 
 
     @Override public boolean animateAdd(ViewHolder holder) {
-        final Point anchor = nextAdditionAnchor;
-        if (null == anchor) return super.animateAdd(holder);
+        final PointF anchor = nextAdditionAnchor;
+        if (null == anchor || !isInsertion(holder)) return super.animateAdd(holder);
+        final PointF target = new PointF(ViewCompat.getX(holder.itemView), ViewCompat.getY(holder.itemView));
         clearInterpolator(holder.itemView);
+        ViewCompat.setX(holder.itemView, anchor.x);
+        ViewCompat.setY(holder.itemView, anchor.y);
         endAnimation(holder);
-        pendingAdditions.add(new AdditionInfo(holder, anchor));
+        pendingAdditions.add(new AdditionInfo(holder, target));
+        nextAdditionAnchor = null;
+        return true;
+    }
+
+    public boolean isInsertion(ViewHolder holder) {
         return true;
     }
 
@@ -77,14 +86,11 @@ public class InsertionAnimator extends DefaultItemAnimator {
         final View view = holder.itemView;
         final ViewPropertyAnimatorCompat animation = ViewCompat.animate(view);
         addAnimations.add(info.holder);
-        final float x = view.getX();
-        final float y = view.getY();
-        view.setX(info.point.x);
-        view.setY(info.point.y);
         animation
-                .x(x)
-                .y(y)
-                .setDuration((long) (getAddDuration() * Math.min(3F, x / view.getWidth()))).
+                .x(info.target.x)
+                .y(info.target.y)
+                .alpha(1)
+                .setDuration((long) (getAddDuration() * Math.min(3F, distance(view.getX(), view.getY(), info.target.x, info.target.y) / view.getWidth()))).
                 setListener(new ViewPropertyAnimatorListener() {
                     @Override
                     public void onAnimationStart(View view) {
@@ -105,6 +111,12 @@ public class InsertionAnimator extends DefaultItemAnimator {
                     }
                 }).start();
 
+    }
+
+    private static double distance(double x0, double y0, double x1, double y1) {
+        final double dx = x0 - x1;
+        final double dy = y0 - y1;
+        return Math.sqrt(dx * dx + dy * dy);
     }
 
     @Override

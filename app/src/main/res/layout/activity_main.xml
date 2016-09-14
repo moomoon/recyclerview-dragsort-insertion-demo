@@ -13,6 +13,7 @@
 
     <RelativeLayout
         android:id="@+id/activity_main"
+        android:clipChildren="false"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:paddingBottom="@dimen/activity_vertical_margin"
@@ -20,20 +21,24 @@
         android:paddingRight="@dimen/activity_horizontal_margin"
         android:paddingTop="@dimen/activity_vertical_margin"
         tools:context="org.dxm.recyclerviewinsertion.MainActivity">
-
         <android.support.v7.widget.RecyclerView
-            android:layout_marginTop="200dp"
-            android:id="@+id/recyclerView"
+            android:id="@+id/album"
             android:layout_width="match_parent"
+            android:clipToPadding="true"
             android:layout_height="match_parent"
+            android:layout_above="@+id/recyclerView"/>
+        <android.support.v7.widget.RecyclerView
+            android:paddingTop="20dp"
+            android:background="@android:color/white"
+            android:layout_alignParentBottom="true"
+            android:id="@+id/recyclerView"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
             app:adapter="@{adapter}"/>
 
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:onClick="insertion"
-            android:text="insert"/>
-            <!--android:onClick="@{() -> adapter.insertItemAt(adapter.getItemCount() / 2, Utils.randomColor())}"-->
+
+        <!--android:onClick="@{() -> adapter.insertItemAt(adapter.getItemCount() / 2, Utils.randomColor())}"-->
     </RelativeLayout>
 </layout>

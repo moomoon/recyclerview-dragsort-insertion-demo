@@ -1,14 +1,13 @@
 package org.dxm.recyclerviewinsertion;
 
 import android.databinding.DataBindingUtil;
-import android.graphics.Point;
+import android.graphics.PointF;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
-import android.view.LayoutInflater;
-import android.view.View;
 
 import org.dxm.recyclerviewinsertion.databinding.ActivityMainBinding;
 
@@ -20,13 +19,14 @@ import static android.support.v7.widget.helper.ItemTouchHelper.LEFT;
 public class MainActivity extends AppCompatActivity {
 
     final SampleAdapter adapter = new SampleAdapter();
-    final InsertionAnimator animator = new InsertionAnimator();
+    InsertionAnimator animator;
+    ActivityMainBinding binding;
+
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        ActivityMainBinding binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
-        GridLayoutManager manager = new GridLayoutManager(this, 10);
-        binding.recyclerView.setItemAnimator(animator);
+        binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
+        RecyclerView.LayoutManager manager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
         binding.recyclerView.setLayoutManager(manager);
         binding.setAdapter(adapter);
         new ItemTouchHelper(new DragCallback(LEFT | RIGHT) {
@@ -38,10 +38,27 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         }).attachToRecyclerView(binding.recyclerView);
-    }
-
-    public void insertion(View view) {
-        animator.setNextAdditionAnchor(new Point(0, -50));
-        adapter.insertItemAt(adapter.getItemCount(), Utils.randomColor());
+        animator = new InsertionAnimator() {
+            @Override public boolean isInsertion(RecyclerView.ViewHolder holder) {
+                return holder.getAdapterPosition() == adapter.getItemCount() - 1;
+            }
+        };
+        binding.recyclerView.setItemAnimator(animator);
+        final SampleAdapter albumAdapter = new SampleAdapter();
+        for (int i = 0; i < 500; i++) {
+            albumAdapter.insertItemAt(0, Utils.randomColor());
+        }
+        GridLayoutManager gridLayoutManager = new GridLayoutManager(this, 11);
+        binding.album.setLayoutManager(gridLayoutManager);
+        binding.album.setAdapter(albumAdapter);
+        albumAdapter.setClickCallback(new SampleAdapter.ClickCallback() {
+            @Override public void onClicked(int position, final Integer color, RecyclerView.ViewHolder holder) {
+                albumAdapter.colors.remove(position);
+                albumAdapter.notifyItemRemoved(position);
+                animator.setNextAdditionAnchor(Utils.translate(new PointF(0, 0), holder.itemView, binding.recyclerView));
+                adapter.insertItemAt(adapter.getItemCount(), color);
+                binding.recyclerView.scrollToPosition(adapter.getItemCount() - 1);
+            }
+        });
     }
 }
